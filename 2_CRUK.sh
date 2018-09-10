@@ -1,238 +1,243 @@
 #!/bin/bash
 set -euo pipefail
 
-#Description: CRUK BaseSpace app pipeline
-#Author: Sara Rey and Chris Medway
-#Status: RELEASE
-Version="1.1.2"
+# Description: CRUK BaseSpace app pipeline
+# Author: Sara Rey and Chris Medway
+# Status: RELEASE
+Version="1.1.3"
 
-# Aliases for local python VE
-alias python='/home/transfer/basespace_vm/venv/bin/python'
-PATH="$PATH":/home/transfer/basespace_vm/venv/bin/
+# location of basespace CLI v2 binary
+BS=/home/transfer/bs
 
 # How to use
 # bash 2_CRUK.sh <path_to_sample_sheet> <name_of_negative_control_sample> <sample_pairs_text_file (optional)>
 
-# Variables
+# variables
 CONFIG="pmg-euc1"
-APPID="105105"
 
-#load variables
+# load variables
 . variables
 
-# Usage checking
+# usage checking
 if [ "$#" -lt 2 ]
-	then
-		echo "Commandline args incorrect. Usage: $0 <path_to_sample_sheet> <name_of_negative_control_sample> <sample_pairs_text_file (optional)>." 
-		exit -1
+    then
+    echo "Commandline args incorrect. Usage: $0 <path_to_sample_sheet> <name_of_negative_control_sample> <sample_pairs_text_file (optional)>." 
+    exit -1
 fi
 
-# Variables dependent on command line arguments
+# variables dependent on command line arguments
 INPUTFOLDER="$1"
 NEGATIVE="$2"
 NOTBASESPACE="$INPUTFOLDER""not_bs.txt"
 FASTQFOLDER="$INPUTFOLDER""/*/trimmed/"
 
 
-#Check if the sample sheet indicates that a manual pairs file should be created
+# check if the sample sheet indicates that a manual pairs file should be created
 if [ $pairs == 0 ]
-	then
-		SAMPLEPAIRS="$INPUTFOLDER""SamplePairs.txt"
-		makePairs=1
+then
+    SAMPLEPAIRS="$INPUTFOLDER""SamplePairs.txt"
+    makePairs=1
 elif [ $pairs == 1 ] && [ "$#" -lt 3 ]
-	then
-		echo "SamplePairs file requires manual generation. Create in script directory and relaunch" \
-		"2_CRUK.sh passing pairs file as the third command line argument."
-		exit 1
+    then
+    echo "SamplePairs file requires manual generation. Create in script directory and relaunch" \
+    "2_CRUK.sh passing pairs file as the third command line argument."
+    exit 1
 elif [ $pairs == 1 ] && [ "$#" -eq 3 ]
-	then
-		SAMPLEPAIRS="$3"
-		# Skip generation of a SamplePairs.txt file
-		makePairs=-1
+    then
+    SAMPLEPAIRS="$3"
+    # Skip generation of a SamplePairs.txt file
+    makePairs=-1
 fi
 
 
-# Check for the presence of the file with samples not to upload to BaseSpace in the same directory as the script
+# check for the presence of the file with samples not to upload to BaseSpace in the same directory as the script
 if [[ -e $NOTBASESPACE ]]
-	then
-		samples_to_skip=1
-		# Check that the provided file is not empty
-		if ! [[ -s $NOTBASESPACE ]]
-			then
-				echo "The file "$NOTBASESPACE" is empty. When this file exists, it must contain the names of samples that are in the SampleSheet.csv, but should not be uploaded to BaseSpace."
-				exit -1
-		fi
-	else
-		samples_to_skip=-1
-		# Notify the user that all samples in the sample sheet will be uploaded
-		echo "No "$NOTBASESPACE" file found in the same directory as the script. All samples on the SampleSheet.csv will be uploaded to BaseSpace."
+then
+    samples_to_skip=1
+    # check that the provided file is not empty
+    if ! [[ -s $NOTBASESPACE ]]
+    then
+        echo "The file "$NOTBASESPACE" is empty. When this file exists, it must contain the names of samples that are in the SampleSheet.csv, but should not be uploaded to BaseSpace."
+        exit -1
+    fi
+else
+    samples_to_skip=-1
+    # notify the user that all samples in the sample sheet will be uploaded
+    echo "No "$NOTBASESPACE" file found in the same directory as the script. All samples on the SampleSheet.csv will be uploaded to BaseSpace."
 fi
 
 
-# Declare an array to store the sample ids in order
+# declare an array to store the sample ids in order
 declare -a samplesArr
-# Initial entry created to avoid downstream error when appending to array
+# initial entry created to avoid downstream error when appending to array
 samplesArr+=1 
 
 
-# Parse SampleSheet
+# parse SampleSheet
 function parseSampleSheet {
 
-	echo "Parsing sample sheet"
+    echo "Parsing sample sheet"
 	
-	# Obtain project name from sample sheet
-	projectName=$(grep "Experiment Name" "$INPUTFOLDER""SampleSheet.csv" | cut -d, -f2 | tr -d " ")
+    # obtain project name from sample sheet
+    projectName=$(grep "Experiment Name" "$INPUTFOLDER""SampleSheet.csv" | cut -d, -f2 | tr -d " ")
 
-	# Obtain list of samples from sample sheet
-	for line in $(sed "1,/Sample_ID/d" "$INPUTFOLDER""SampleSheet.csv" | tr -d " ")
-		do 
-			# Obtain sample name and patient name		
-			samplename=$(printf "$line" | cut -d, -f1 | sed 's/[^a-zA-Z0-9]+/-/g')
+    echo $projectName
 
-	 		# Skip any empty sample ids- both empty and whitespace characters (but not tabs at present)
-	 		if [[ "${#samplename}" = 0 ]] || [[ "$samplename" =~ [" "] ]]
-				then
-					continue
-	 		fi
+    # obtain list of samples from sample sheet
+    for line in $(sed "1,/Sample_ID/d" "$INPUTFOLDER""SampleSheet.csv" | tr -d " ")
+    do
+        # obtain sample name and patient name		
+        samplename=$(printf "$line" | cut -d, -f1 | sed 's/[^a-zA-Z0-9]+/-/g')
 
-			# Append information to list array- to retain order for sample pairing
-			samplesArr=("${samplesArr[@]}" "$samplename")
-	done
+        # skip any empty sample ids- both empty and whitespace characters (but not tabs at present)
+        if [[ "${#samplename}" = 0 ]] || [[ "$samplename" =~ [" "] ]]
+        then
+	    continue
+        fi
+
+        # append information to list array- to retain order for sample pairing
+        samplesArr=("${samplesArr[@]}" "$samplename")
+    done
 }
 
 
 function pairSamples {
 
-	echo "Pairing samples"
+    echo "Pairing samples"
 
-	# Create/clear file which holds the sample name and the patient identifiers
-	> "$SAMPLEPAIRS"
+    # create/clear file which holds the sample name and the patient identifiers
+    > "$SAMPLEPAIRS"
 	
-	# Iterate through the samples and exclude any samples that are not for basespace
-	# Pair the samples assuming the order tumour then normal and create a file of these pairs
-	# Create array containing the samples that are not tumour-normal pairs
-	# Check if there are any samples on the run that are not for BaseSpace and so should not be paired
-	if [[ -e $NOTBASESPACE ]]
-		then
-			mapfile -t notPairs < $NOTBASESPACE
-			notPairs=("${notPairs[@]}" "$NEGATIVE") 
-		else
-			notPairs+=("$NEGATIVE")
-	fi	
+    # iterate through the samples and exclude any samples that are not for basespace
+    # pair the samples assuming the order tumour then normal and create a file of these pairs
+    # create array containing the samples that are not tumour-normal pairs
+    # check if there are any samples on the run that are not for BaseSpace and so should not be paired
+    if [[ -e $NOTBASESPACE ]]
+    then
+        mapfile -t notPairs < $NOTBASESPACE
+        notPairs=("${notPairs[@]}" "$NEGATIVE") 
+    else
+        notPairs+=("$NEGATIVE")
+    fi	
 	
-	# Exclude non tumour-normal pairs from pair file creation		
-	grep -f <(printf -- '%s\n' "${notPairs[@]}") -v <(printf '%s\n' "${samplesArr[@]:1}") | awk -F '\t' 'NR % 2 {printf "%s\t", $1;} !(NR % 2) {printf "%s\n", $1;}' >"$SAMPLEPAIRS"
-
+    # exclude non tumour-normal pairs from pair file creation		
+    grep -f <(printf -- '%s\n' "${notPairs[@]}") -v <(printf '%s\n' "${samplesArr[@]:1}") | awk -F '\t' 'NR % 2 {printf "%s\t", $1;} !(NR % 2) {printf "%s\n", $1;}' >"$SAMPLEPAIRS"
 }
 
 
 function locateFastqs {
 
-	echo "Uploading fastqs"
+    echo "Uploading fastqs"
 
-	if [[ "$samples_to_skip" == 1 ]]
-		then
-			fastqlist=$( printf -- '%s\n' "${samplesArr[@]:1}" | grep -f "$NOTBASESPACE" -v )
-		else
-			fastqlist=$(printf -- '%s\n' "${samplesArr[@]:1}")
-	fi
+    if [[ "$samples_to_skip" == 1 ]]
+    then
+        fastqlist=$( printf -- '%s\n' "${samplesArr[@]:1}" | grep -f "$NOTBASESPACE" -v )
+    else
+        fastqlist=$(printf -- '%s\n' "${samplesArr[@]:1}")
+    fi
 	
-	for fastq in $(printf -- '%s\n' "$fastqlist")
-		do
-			f1=$FASTQFOLDER${fastq}*_R1_*.fastq.gz
-			f2=$FASTQFOLDER${fastq}*_R2_*.fastq.gz
-		
-			# Obtain basespace identifier for each sample
-			baseSpaceId=$(bs -c "$CONFIG" upload sample -p $projectName -i "$fastq" $f1 $f2 --terse)
-	done
+    for fastq in $(printf -- '%s\n' "$fastqlist")
+    do
+        f1=$FASTQFOLDER${fastq}*_R1_*.fastq.gz
+        f2=$FASTQFOLDER${fastq}*_R2_*.fastq.gz
 
+        # added in version 1.1.3. bscli v2 requires sample unicity
+        # therefore sample names are prefixed with project name
+        cp $f1 ./"$projectName"-`basename $f1`
+        cp $f2 ./"$projectName"-`basename $f2`
+
+        f1=./"$projectName"-`basename $f1`
+        f2=./"$projectName"-`basename $f2`
+                        
+        # upload fastq to biosample
+        $BS upload dataset --config "$CONFIG" --project $projectId $f1 $f2
+    done
 }
 
 
 function launchApp {
 
-	# Launch app for each pair of samples in turn as tumour normal pairs then download analysis files
+    # launch app for each pair of samples in turn as tumour normal pairs then download analysis files
 	
-	# Obtain basespace ID of negative control- this is not an optional input through the commandline app launch
-	negId=$(bs -c "$CONFIG" list samples --project "$projectName" --sample "$NEGATIVE" --terse)
+    # obtain basespace ID of negative control- this is not an optional input through the commandline app launch
+    negId=$($BS list biosample --config "$CONFIG" --filter-field BioSampleName --filter-term "$projectName"-"$NEGATIVE" --terse)
+	
+    while read pair
+    do
+        # stop iteration on first empty line of SamplePairs.txt file in case EOF marker is absent for any reason
+        if [[ -z $pair ]]
+        then
+            return 0
+        fi
 
-	# Obtain the project identifier
-	projectId=$(bs -c "$CONFIG" list projects --project-name "$projectName" --terse)
-
-	while read pair
-		do
-			# Stop iteration on first empty line of SamplePairs.txt file in case EOF marker is absent for any reason
-			if [[ -z $pair ]]
-				then
-					return 0
-			fi
-			echo "Launching app for ""$pair"
+        echo "Launching app for ""$pair"
 			
-			tum=$(printf "$pair" | cut -d$'\t' -f1)
-			nor=$(printf "$pair" | cut -d$'\t' -f2)
+        tum=$(printf "$pair" | cut -d$'\t' -f1)
+        nor=$(printf "$pair" | cut -d$'\t' -f2)
 
-			# Obtain sample ids from basespace
-			tumId=$(bs -c "$CONFIG" list samples --project "$projectName" --sample "$tum" --terse)
-			norId=$(bs -c "$CONFIG" list samples --project "$projectName" --sample "$nor" --terse)
+        # obtain sample ids from basespace
+        tumId=$($BS list biosample --config "$CONFIG" --filter-field BioSampleName --filter-term "$projectName"-"$tum" --terse)
+        norId=$($BS list biosample --config "$CONFIG" --filter-field BioSampleName --filter-term "$projectName"-"$nor" --terse)
 
-			# Launch app and store the appsession ID	
-			appSessionId=$(bs -c "$CONFIG" launch app -i "$APPID" "$negId" "$norId" "$projectName" "$tumId" --terse)
-	done <"$SAMPLEPAIRS"
+        # launch app and store the appsession ID	
+       appSessionId=$($BS launch application \
+               --config "$CONFIG" \
+               --name "SMP2 v2" \
+               --app-version "1.1.2" \
+               --option tumour-sample-id:$tumId \
+               --option normal-sample-id:$norId \
+               --option negative-sample-id:$negId \
+               --option project-id:$projectId \
+               --option basespace-labs:1 \
+               --terse )
 
+        # save file that will track the appsession IDs for each sample pair
+        echo -e $appSessionId $tum $nor $projectName >> ./appsessions.txt
+
+    done <"$SAMPLEPAIRS"
 }
 
 
-
-# Call the functions
-
-# Check sample sheet exists at location provided
+# call the functions
+# check sample sheet exists at location provided
 if ! [[ -e "$INPUTFOLDER""SampleSheet.csv" ]]
-	then
-		echo "Sample Sheet not found at input folder location"
-		exit -1
+then
+    echo "Sample Sheet not found at input folder location"
+    exit -1
 fi
 
-
-# Parse sample sheet to obtain required information
+# parse sample sheet to obtain required information
 parseSampleSheet
 
-
-# Pair samples according to order in sample sheet if manually created pairs file has not been supplied
+# pair samples according to order in sample sheet if manually created pairs file has not been supplied
 if [[ "$makePairs" == 1 ]]
-	then
-		pairSamples
+then
+    pairSamples
 fi
 
-# Count number of paired samples
+# count number of paired samples
 numPairs=$(cat "$SAMPLEPAIRS" | cut -f2 | sed '/^\s*$/d' | wc -l)
 
-# Read out the sample pairs in the order tumour blood with each pair on a new line 
+# read out the sample pairs in the order tumour blood with each pair on a new line 
 echo "Displaying sample pairs:" 
 cat "$SAMPLEPAIRS"
 printf $'\n'
 echo "Abort the script if the samples are paired incorrectly and create a file of the pairs (see README.MD for details about this file)." 
 printf $'\n'
 
-
-# Create project in basespace
+# create project in basespace
 echo "Creating project"
-bs -c "$CONFIG" create project "$projectName"
+$BS create project --name "$projectName" --config "$CONFIG"
 
+# get project ID
+projectId=$($BS get project --name $projectName --config $CONFIG --terse)
 
 # Get fastqs and upload to basespace
 locateFastqs
 
-
 # Kick off the app for each pair in turn
+if [ -e "appsessions.txt" ]; then rm appsessions.txt; fi
 launchApp
 
-# Write config file for JavaScript script
-printf '%s\n' "{" "\"projectID\": ""\"$projectId\"""," "\"projectName\": ""\"$projectName\"""," "\"numPairs\": ""\"$numPairs\"""," "\"negativeControl\": ""\"$NEGATIVE\""  "}" > runConfig.json
-
-
-# Write name of sample pairs file name to file
-printf "$SAMPLEPAIRS" >"pairFn.txt"
-
-
-# Queue next script in the pipeline for half an hours time
-at now +30 minutes -f ./3_CRUK.sh >3_CRUK.out 2>3_CRUK.err
+# queue next script in the pipeline for half an hours time
+at now +50 minutes -f ./3_CRUK.sh >3_CRUK.out 2>3_CRUK.err

@@ -7,7 +7,8 @@ cd $PBS_O_WORKDIR
 
 #Description: BaseSpace app pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Mode: BY_SAMPLE
-version="1.1.2"
+
+version="1.1.3"
 
 # Directory structure required for pipeline
 #
@@ -95,9 +96,7 @@ if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g
     #soft link sample sheet
     ln -s /data/archive/fastq/"$seqId"/SampleSheet.csv ..
     #launch second pipeline script, move out one directory level, save working directory to a variable
-    cp 2_CRUK.sh .. && cp 3_CRUK.sh .. && cp /data/diagnostics/pipelines/"$pipelineName"/"$pipelineName"-"$pipelineVersion"/config.json .. \
-     && cp /data/diagnostics/pipelines/"$pipelineName"/"$pipelineName"-"$pipelineVersion"/baseSpace.js ..
-    cd ..
+    cp 2_CRUK.sh .. && cp 3_CRUK.sh .. && cd ..
     wd=$PWD
     ssh transfer@cvx-gen01 "cd '$wd'; bash ./2_CRUK.sh './' '$negative' >./2_CRUK.out 2>./2_CRUK.err;"
 fi
