@@ -46,7 +46,6 @@ read1Adapter=XXXXXXX
 read2Adapter=XXXXXXX
 
 
-
 ## Introduction
 This script trims the adapter sequences from the fastq files using cutadapt (http://cutadapt.readthedocs.io/en/stable/guide.html), 
 and runs fastqc. It also creates a symlink to the SampleSheet.csv within the panel directory (required for script 2_CRUK.sh).
