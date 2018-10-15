@@ -239,5 +239,25 @@ locateFastqs
 if [ -e "appsessions.txt" ]; then rm appsessions.txt; fi
 launchApp
 
-# queue next script in the pipeline for half an hours time
-at now +50 minutes -f ./3_CRUK.sh >3_CRUK.out 2>3_CRUK.err
+numberOfAppSessions=$(wc -l  < appsessions.txt)
+numberOfCompleteAppSessions=0
+
+until [ $numberOfCompleteAppSessions -eq $numberOfAppSessions ]
+do
+
+    numberOfCompleteAppSessions=0
+
+    while read session
+    do
+      	appId=$(echo $session | cut -d' ' -f1)
+        status=$($BS list appsessions --config "pmg-euc1" --filter-field Id --filter-term $appId -f csv -F ExecutionStatus)
+
+        if [ $status == "Complete" ]; then numberOfCompleteAppSessions=$[$numberOfCompleteAppSessions +1]; fi
+
+    done < ./appsessions.txt
+done
+
+echo "$numberOfCompleteAppSessions app sessions are complete. Downloading data..."
+
+# kick off next script
+bash ./3_CRUK.sh >3_CRUK.out 2>3_CRUK.err
