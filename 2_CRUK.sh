@@ -239,6 +239,7 @@ locateFastqs
 if [ -e "appsessions.txt" ]; then rm appsessions.txt; fi
 launchApp
 
+# loop over app sessions and check to see if all app sessions are complete
 numberOfAppSessions=$(wc -l  < appsessions.txt)
 numberOfCompleteAppSessions=0
 
