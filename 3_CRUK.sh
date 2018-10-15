@@ -10,6 +10,7 @@ BS=/home/transfer/bs
 
 if [ ! -e "./appsessions.txt" ]; then echo "cannot locate appsessions.txt"; exit -1; fi
 
+# loop over each line in appsessions file
 while read session;
 do
 
@@ -20,7 +21,7 @@ do
 
     echo "downloading files for $sessionId"
 
-    # check app has completed
+    # check app has completed - look in log file as part of QC checks
     $BS list appsessions --config "pmg-euc1" --filter-field Id --filter-term $sessionId
 
     # create directory for downloads
