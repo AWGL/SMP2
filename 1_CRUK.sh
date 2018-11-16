@@ -92,6 +92,9 @@ echo -e "$rawSequenceQuality" >> "$seqId"_"$sampleId"_QC.txt
 
 #check if all samples are written
 if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g') -eq $(sort ../FASTQs.list | uniq | wc -l | sed 's/^[[:space:]]*//g') ]; then
+    # generate combinedQC file
+    python /data/diagnostics/scripts/merge_qc_files.py /data/results/$seqId/$panel/
+  
     echo -e "seqId=$seqId\npanel=$panel\npairs=$pairs\nnegative=$negative" > ../variables
     #soft link sample sheet
     ln -s /data/archive/fastq/"$seqId"/SampleSheet.csv ..
