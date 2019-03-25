@@ -13,7 +13,7 @@ BS=/home/transfer/bs
 # bash 2_CRUK.sh <path_to_sample_sheet> <sample_pairs_text_file (optional)>
 
 # load sample variables
-. *.variables
+. variables
 
 # loaded in from sample variables
 NEGATIVE="$negative"
