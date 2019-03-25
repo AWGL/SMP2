@@ -76,10 +76,6 @@ Script 2_CRUK.sh runs once per sequencing run.
 
   * Fastq pairs (read 1 and read 2) for each of the samples (pre-trimmed).
 
-  * An optional text file called "not_bs.txt" containing the names of any samples on the Illumina SampleSheet.csv for which
-analysis in BaseSpace with the SMP2 app is not required. This should be placed in the same location (directory) as the script.
-This must be used with the automated creation of a sample pairs file (where the pairs variable is set to 0 in the sample sheet).
-
   * An optional text file containing tumour normal pairs in the format <tumour_sample_id> <tab> <blood_sample_id> with each 
 pair on a new line. This is required if the arrangement of samples in the Illumina SampleSheet.csv does not match the expected
 order, which is tumour sample then normal sample for each patient in order. An example of this order is: S1 tumour sample for person 
