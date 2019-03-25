@@ -102,11 +102,11 @@ config file with a different name to the default can be used by changing the nam
 necessary to import the SMP2 app.
 
 
-### Changes to the script required for initial set up
+### Changes to the script that may be required for initial set up
   * Check that the fastqs are located in the location in the $FASTQFOLDER variable and check that the $CONFIG variable is set to the name
     of the correct config file for use of the SMP2 v2 app.
 
-  * Ensure that the $APPID variable is set to the correct application id for the imported version of the SMP2 v2 app currently in use.
+  * Ensure that the -app--version is the correct version of the SMP2 app for this analysis (within the launchApp function).
 
 
 ### Instructions for manually launching the script
