@@ -56,8 +56,7 @@ whether the sample has passed or failed is printed out to a QC file.
 Script 1_CRUK.sh runs once for each sample on the sequencing run.
 
 
-Once all samples have had adapters trimmed and fastqc run, script 2 can be automatically launched. If this is not required, line 99
-can be removed or commented out.
+Once all samples have had adapters trimmed and fastqc run, script 2 can be automatically launched. If automated launch of 2_CRUK.sh is not required, line 104 of 1_CRUK.sh can be removed or commented out.
 
 # 2_CRUK.sh script
 ## Introduction
