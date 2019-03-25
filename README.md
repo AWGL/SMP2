@@ -97,7 +97,7 @@ The project name is entered in the Experiment Name field of the Illumina SampleS
 
 ## Instructions for use
 ### Prerequisites
-The Illumina CLI must be correctly set up to point to the required BaseSpace location. As of version 1.1.3, this location is defined in the script.A 
+The Illumina CLI must be correctly set up to point to the required BaseSpace location. As of version 1.1.3, this location is defined in the script. A 
 config file with a different name to the default can be used by changing the name of the $CONFIG variable in the script. Using BSCLIv2, it is no longer
 necessary to import the SMP2 app.
 
