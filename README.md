@@ -175,13 +175,7 @@ is started.
 Script 3_CRUK.sh runs once per sequencing run.
 
 ### Instructions for manually launching the script
-If automated launch of the script 3_CRUK.sh is disabled, the script can be manually launched by typing bash 3_CRUK.sh at the command line. No
-command line arguments are required to be supplied, but the NODE variable should be adjusted within the script to point to the bin directory
-of the node installation. If the script is not resuming from the previous step of the pipeline, it will be necessary to create config.json and
-runConfig.json files according to the instructions below. If absent, a file called pairsFn.txt will also need to be created containing the name of the
-sample pairs file. This is usually SamplePairs.txt, but could be something else (user's choice) if the pairs file was manually created. Any
-pairs which have failed to successfully complete the SMP2v2 application process must be removed from the sample pairs file or included in a
-file called not_bs.txt.
+If automated launch of the script 3_CRUK.sh is disabled, the script can be manually launched by typing bash 3_CRUK.sh at the command line. 
 
-Scripr 3 requires the appsessions.txt file, which is generated in 2_CRUK.sh. This file lists the sample pairs, and the appsession Id which is processing
-the sample data. This is used to download the appropriate files. The script can be manually lauched: bash 3_CRUK.sh.
+Script 3 requires the appsessions.txt file, which is generated in 2_CRUK.sh. This file lists the sample pairs, and the appsession Id which is processing
+the sample data. This is used to download the appropriate files.
