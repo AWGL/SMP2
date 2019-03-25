@@ -164,8 +164,7 @@ Once script 2 has completed, script 3 can be automatically launched when each ap
 
 # 3_CRUK.sh script
 ## Requirements
-  * Requires path to Node.js to be installed and the path to the bin directory of the installation to be entered in the NODE variable. Do not 
-  include the trailing / in the path.
+  * Requires the appsessions.txt file, which is generated in 2_CRUK.sh. 
 
 
 ## Introduction
