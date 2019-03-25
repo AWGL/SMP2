@@ -81,7 +81,7 @@ pair on a new line. This is required if the arrangement of samples in the Illumi
 order, which is tumour sample then normal sample for each patient in order. An example of this order is: S1 tumour sample for person 
 1, S2 blood sample for person 1, S3 tumour sample for person 2, S4 blood sample for person 2, etc. This file can be located anywhere 
 on the same computer as the script. The name of the full path to the file, the file name file and extension must be supplied as the 
-third command line argument e.g. /path/to/file/pairs.txt.
+second command line argument to 2_CRUK.sh e.g. /path/to/file/pairs.txt and the analysis process manually requeued from this stage (script 2).
 
 
 ### Caveats
@@ -119,9 +119,9 @@ following instructions.
   * If a manually created file containing the tumour blood pairs is required, place this file on the same computer as the script and
   files to be analysed. Pass the full path to the file, the name of this file and the extension as the second command line argument.
   e.g. /path/to/pairs/file/pairs.txt. If this option
-  is used with manual launch of 2_CRUK.sh, the pairs variable in the variables file in the run folder must be set to 1.
+  is used with manual launch of 2_CRUK.sh, the pairs variable in the SampleSheet.csv (and therefore also in the variables file in the run folder) must be set to 1.
   
-  * If the automatic pair generation option is used (default), the automatically generated SamplePairs.txt file will be created in the
+  * If the automatic pair generation option is used (default, pairs variable set to 0), the automatically generated SamplePairs.txt file will be created in the
   same location as the SampleSheet.csv.
 
 
