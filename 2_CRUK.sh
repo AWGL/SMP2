@@ -82,7 +82,7 @@ function parseSampleSheet {
         fi
 
         # append information to list array- to retain order for sample pairing
-        samplesArr=("${samplesArr[@]}" "$samplename")
+        samplesArr=[${#samplesArr[*]}]="$samplename"
     done
 }
 
