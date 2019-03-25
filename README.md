@@ -116,24 +116,19 @@ following instructions.
   If this is not the location of the fastq files, the variable $FASTQFOLDER within the script should be changed to the
   location of the fastq files.
 
-  * Pass the sample name of the negative control sample as the second command line argument.
-
   * If a manually created file containing the tumour blood pairs is required, place this file on the same computer as the script and
-  files to be analysed. Pass the full path to the file, the name of this file and the extension as the third command line argument.
-  e.g. /path/to/pairs/file/pairs.txt. Samples can also be skipped by creating a list of samples in a file called not_bs.txt. If this option
-  is used with manual launch of 2_CRUK.sh, the pairs variable in the variables file in the run folder must be set to 0.
+  files to be analysed. Pass the full path to the file, the name of this file and the extension as the second command line argument.
+  e.g. /path/to/pairs/file/pairs.txt. If this option
+  is used with manual launch of 2_CRUK.sh, the pairs variable in the variables file in the run folder must be set to 1.
   
   * If the automatic pair generation option is used (default), the automatically generated SamplePairs.txt file will be created in the
   same location as the SampleSheet.csv.
 
-  * If there are samples which were run, and so are on the sample sheet, that are not required to be analysed using the SMP2 BaseSpace application, 
-the names of these samples should be placed in a file called "not_bs.txt" with each name on a new line. The file "not_bs.txt"
-should be placed in the same directory as the script.
 
 #### Full example
-bash 2_CRUK.sh /path/to/samplesheet/ NEGATIVECONTROL /path/to/pairs/file/pairs.txt
+bash 2_CRUK.sh /path/to/samplesheet/ /path/to/pairs/file/pairs.txt
 
-Note that the third argument is optional.
+Note that the second argument is optional.
 
 ## Creating the tumour blood pairs file
 If the sample sheet is not set up with the pattern tumour sample followed by paired blood sample for each patient sequentially, it is necessary
@@ -152,7 +147,7 @@ tumour3 tab blood3 newline
 ...and so on for each pair of samples belonging to each individual.
 
 This text file can have any name. It can be placed anywhere on the same computer as the script and the full path to the file, the name of the 
-file and the extension should be passed as the third command line argument.
+file and the extension should be passed as the second command line argument.
 
 
 Once script 2 has completed, script 3 can be automatically launched when each app (appids can be found in the appsessions file) has completed.
