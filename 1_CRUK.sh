@@ -101,5 +101,5 @@ if [ $(find .. -maxdepth 1 -mindepth 1 -type d | wc -l | sed 's/^[[:space:]]*//g
     #launch second pipeline script, move out one directory level, save working directory to a variable
     cp 2_CRUK.sh .. && cp 3_CRUK.sh .. && cd ..
     wd=$PWD
-    ssh transfer@cvx-gen01 "cd '$wd'; bash ./2_CRUK.sh './' '$negative' >./2_CRUK.out 2>./2_CRUK.err;"
+    ssh transfer@cvx-gen01 "cd '$wd'; bash ./2_CRUK.sh './' >./2_CRUK.out 2>./2_CRUK.err;"
 fi

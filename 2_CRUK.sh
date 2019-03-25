@@ -10,25 +10,26 @@ Version="1.1.4"
 BS=/home/transfer/bs
 
 # How to use
-# bash 2_CRUK.sh <path_to_sample_sheet> <name_of_negative_control_sample> <sample_pairs_text_file (optional)>
+# bash 2_CRUK.sh <path_to_sample_sheet> <sample_pairs_text_file (optional)>
+
+# load sample variables
+. *.variables
+
+# loaded in from sample variables
+NEGATIVE="$negative"
 
 # variables
 CONFIG="pmg-euc1"
 
-# load variables
-. variables
-
 # usage checking
-if [ "$#" -lt 2 ]
+if [ "$#" -lt 1 ]
     then
-    echo "Commandline args incorrect. Usage: $0 <path_to_sample_sheet> <name_of_negative_control_sample> <sample_pairs_text_file (optional)>." 
+    echo "Commandline args incorrect. Usage: $0 <path_to_sample_sheet> <sample_pairs_text_file (optional)>." 
     exit -1
 fi
 
 # variables dependent on command line arguments
 INPUTFOLDER="$1"
-NEGATIVE="$2"
-NOTBASESPACE="$INPUTFOLDER""not_bs.txt"
 FASTQFOLDER="$INPUTFOLDER""/*/trimmed/"
 
 
@@ -37,40 +38,25 @@ if [ $pairs == 0 ]
 then
     SAMPLEPAIRS="$INPUTFOLDER""SamplePairs.txt"
     makePairs=1
-elif [ $pairs == 1 ] && [ "$#" -lt 3 ]
+elif [ $pairs == 1 ] && [ "$#" -lt 2 ]
     then
     echo "SamplePairs file requires manual generation. Create in script directory and relaunch" \
-    "2_CRUK.sh passing pairs file as the third command line argument."
+    "2_CRUK.sh passing a properly formatted pairs file as the third command line argument. See README.MD for details."
     exit 1
-elif [ $pairs == 1 ] && [ "$#" -eq 3 ]
+elif [ $pairs == 1 ] && [ "$#" -eq 2 ]
     then
-    SAMPLEPAIRS="$3"
-    # Skip generation of a SamplePairs.txt file
+    SAMPLEPAIRS="$2"
+    # Skip generation of a SamplePairs.txt file as it is already created and passed in as a command line argument
     makePairs=-1
 fi
 
 
-# check for the presence of the file with samples not to upload to BaseSpace in the same directory as the script
-if [[ -e $NOTBASESPACE ]]
-then
-    samples_to_skip=1
-    # check that the provided file is not empty
-    if ! [[ -s $NOTBASESPACE ]]
-    then
-        echo "The file "$NOTBASESPACE" is empty. When this file exists, it must contain the names of samples that are in the SampleSheet.csv, but should not be uploaded to BaseSpace."
-        exit -1
-    fi
-else
-    samples_to_skip=-1
-    # notify the user that all samples in the sample sheet will be uploaded
-    echo "No "$NOTBASESPACE" file found in the same directory as the script. All samples on the SampleSheet.csv will be uploaded to BaseSpace."
-fi
+# notify the user that all samples in the sample sheet will be uploaded
+echo "All samples on the SampleSheet.csv will be uploaded to BaseSpace."
 
 
 # declare an array to store the sample ids in order
 declare -a samplesArr
-# initial entry created to avoid downstream error when appending to array
-samplesArr+=1 
 
 
 # parse SampleSheet
@@ -81,7 +67,7 @@ function parseSampleSheet {
     # obtain project name from sample sheet
     projectName=$(grep "Experiment Name" "$INPUTFOLDER""SampleSheet.csv" | cut -d, -f2 | tr -d " ")
 
-    echo $projectName
+    echo "Project name is "$projectName
 
     # obtain list of samples from sample sheet
     for line in $(sed "1,/Sample_ID/d" "$INPUTFOLDER""SampleSheet.csv" | tr -d " ")
@@ -92,7 +78,7 @@ function parseSampleSheet {
         # skip any empty sample ids- both empty and whitespace characters (but not tabs at present)
         if [[ "${#samplename}" = 0 ]] || [[ "$samplename" =~ [" "] ]]
         then
-	    continue
+	        continue
         fi
 
         # append information to list array- to retain order for sample pairing
@@ -105,38 +91,30 @@ function pairSamples {
 
     echo "Pairing samples"
 
-    # create/clear file which holds the sample name and the patient identifiers
+    # create/clear file which holds the sample name
+    # pair the samples assuming the order tumour then normal and create a file of these pairs
     > "$SAMPLEPAIRS"
 	
-    # iterate through the samples and exclude any samples that are not for basespace
-    # pair the samples assuming the order tumour then normal and create a file of these pairs
-    # create array containing the samples that are not tumour-normal pairs
-    # check if there are any samples on the run that are not for BaseSpace and so should not be paired
-    if [[ -e $NOTBASESPACE ]]
-    then
-        mapfile -t notPairs < $NOTBASESPACE
-        notPairs=("${notPairs[@]}" "$NEGATIVE") 
-    else
-        notPairs+=("$NEGATIVE")
-    fi	
+    
+    # create array containing the samples that are not tumour-normal pairs (supports the option for more than one excluded sample)
+    notPairs+=("$NEGATIVE")
+
 	
-    # exclude non tumour-normal pairs from pair file creation		
-    grep -f <(printf -- '%s\n' "${notPairs[@]}") -v <(printf '%s\n' "${samplesArr[@]:1}") | awk -F '\t' 'NR % 2 {printf "%s\t", $1;} !(NR % 2) {printf "%s\n", $1;}' >"$SAMPLEPAIRS"
+    # exclude non tumour-normal pairs from pair file creation (e.g. negative control)	
+    grep -f <(printf -- '%s\n' "${notPairs[@]}") -v <(printf '%s\n' "${samplesArr[@]}") | awk -F '\t' 'NR % 2 {printf "%s\t", $1;} !(NR % 2) {printf "%s\n", $1;}' >"$SAMPLEPAIRS"
+
 }
 
 
 function locateFastqs {
 
-    echo "Uploading fastqs"
+    # create array of all files for fq upload- use sample pairs file to support option for manual creation of sample pairs file
+    mapfile -t pairsArr < "$SAMPLEPAIRS"
+    fastqArr=("${notPairs[@]}" "${pairsArr[@]}")
 
-    if [[ "$samples_to_skip" == 1 ]]
-    then
-        fastqlist=$( printf -- '%s\n' "${samplesArr[@]:1}" | grep -f "$NOTBASESPACE" -v )
-    else
-        fastqlist=$(printf -- '%s\n' "${samplesArr[@]:1}")
-    fi
+    echo "Upload fastqs"
 	
-    for fastq in $(printf -- '%s\n' "$fastqlist")
+    for fastq in $(printf -- '%s\n' "${fastqArr[@]}")
     do
         f1=$FASTQFOLDER${fastq}*_R1_*.fastq.gz
         f2=$FASTQFOLDER${fastq}*_R2_*.fastq.gz
@@ -164,12 +142,6 @@ function launchApp {
 	
     while read pair
     do
-        # stop iteration on first empty line of SamplePairs.txt file in case EOF marker is absent for any reason
-        if [[ -z $pair ]]
-        then
-            return 0
-        fi
-
         echo "Launching app for ""$pair"
 			
         tum=$(printf "$pair" | cut -d$'\t' -f1)
@@ -214,9 +186,6 @@ if [[ "$makePairs" == 1 ]]
 then
     pairSamples
 fi
-
-# count number of paired samples
-numPairs=$(cat "$SAMPLEPAIRS" | cut -f2 | sed '/^\s*$/d' | wc -l)
 
 # read out the sample pairs in the order tumour blood with each pair on a new line 
 echo "Displaying sample pairs:" 
