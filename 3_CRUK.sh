@@ -5,7 +5,7 @@ set -euo pipefail
 # using basespace command line interface (version 2)
 # Author: Christopher Medway
 
-version="1.1.3"
+version="1.1.4"
 BS=/home/transfer/bs
 
 if [ ! -e "./appsessions.txt" ]; then echo "cannot locate appsessions.txt"; exit -1; fi

@@ -8,7 +8,7 @@ cd $PBS_O_WORKDIR
 #Description: BaseSpace app pipeline (Illumina paired-end). Not for use with other library preps/ experimental conditions.
 #Mode: BY_SAMPLE
 
-version="1.1.3"
+version="1.1.4"
 
 # Directory structure required for pipeline
 #

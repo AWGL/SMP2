@@ -4,7 +4,7 @@ set -euo pipefail
 # Description: CRUK BaseSpace app pipeline
 # Author: Sara Rey and Chris Medway
 # Status: RELEASE
-Version="1.1.3"
+Version="1.1.4"
 
 # location of basespace CLI v2 binary
 BS=/home/transfer/bs
