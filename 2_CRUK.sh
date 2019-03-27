@@ -28,6 +28,7 @@ if [ "$#" -lt 1 ]
     exit -1
 fi
 
+
 # variables dependent on command line arguments
 INPUTFOLDER="$1"
 FASTQFOLDER="$INPUTFOLDER""/*/trimmed/"
@@ -41,7 +42,7 @@ then
 elif [ $pairs == 1 ] && [ "$#" -lt 2 ]
     then
     echo "SamplePairs file requires manual generation. Create in script directory and relaunch" \
-    "2_CRUK.sh passing a properly formatted pairs file as the third command line argument. See README.MD for details."
+    "2_CRUK.sh passing a properly formatted pairs file as the second command line argument. See README.MD for details."
     exit 1
 elif [ $pairs == 1 ] && [ "$#" -eq 2 ]
     then
@@ -49,10 +50,6 @@ elif [ $pairs == 1 ] && [ "$#" -eq 2 ]
     # Skip generation of a SamplePairs.txt file as it is already created and passed in as a command line argument
     makePairs=-1
 fi
-
-
-# notify the user that all samples in the sample sheet will be uploaded
-echo "All samples on the SampleSheet.csv will be uploaded to BaseSpace."
 
 
 # declare an array to store the sample ids in order
@@ -82,7 +79,8 @@ function parseSampleSheet {
         fi
 
         # append information to list array- to retain order for sample pairing
-        samplesArr=[${#samplesArr[*]}]="$samplename"
+        samplesArr=[${#samplesArr[*]}]="$samplename" # to support cluster version of bash
+        #samplesArr=("${samplesArr[@]}" "$samplename") # to support Macintosh version of bash
     done
 }
 
@@ -102,7 +100,6 @@ function pairSamples {
 	
     # exclude non tumour-normal pairs from pair file creation (e.g. negative control)	
     grep -f <(printf -- '%s\n' "${notPairs[@]}") -v <(printf '%s\n' "${samplesArr[@]}") | awk -F '\t' 'NR % 2 {printf "%s\t", $1;} !(NR % 2) {printf "%s\n", $1;}' >"$SAMPLEPAIRS"
-
 }
 
 
